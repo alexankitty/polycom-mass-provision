@@ -32,8 +32,9 @@ def main():
 
     phoneIPs = scanNetwork(iparr)
     phones = parseCsv(args.csvfile)
-    phoneArr = parseResults(phoneIPs, phones)
-    failures = []
+    phonetuple = parseResults(phoneIPs, phones)
+    phoneArr = phonetuple[0]
+    failures = phonetuple[1]
     for phone in phoneArr:
         session = auth(phone['ip'], phone['pw'])
         if not session:
@@ -93,6 +94,7 @@ def parseCsv(filename):
 def parseResults(scanIPs, phones):
     print("Parsing results.")
     phoneArr = []
+    failures = []
     for scanIP in scanIPs:
         for index in range(len(phones)):
             if scanIP['mac'] == phones[index]['mac']:
@@ -101,7 +103,9 @@ def parseResults(scanIPs, phones):
                 #remove the index and decrement as we don't want it to be an option anymore.
                 phones.pop(index)
                 index-=1
-    return phoneArr
+    for phone in phones:
+        failures.append(f'{phone["ip"]} {phone["mac"]}: Phone could not be found.')
+    return (phoneArr, failures)
 
 def auth(ip, pw):
     endpoint = f'https://{ip}/form-submit/auth.htm'
