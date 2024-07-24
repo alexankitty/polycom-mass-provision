@@ -59,7 +59,10 @@ def scanNetwork(ips):
 
         result = srp(packet, timeout=3, verbose=0)[0]
         for sent, received in result:
-            phoneIPs.append({'ip': received.psrc, 'mac': received.hwsrc})
+            # normalize the MAC
+            mac = received.hwsrc.replace(":", "")
+            mac = mac.lower()
+            phoneIPs.append({'ip': received.psrc, 'mac': mac})
     return phoneIPs        
 
 def parseCsv(filename):
@@ -69,6 +72,11 @@ def parseCsv(filename):
         for row in reader:
             data = {}
             for key, value in row:
+                if key == 'mac':
+                    # normalize the MAC
+                    value = value.replace(":", "")
+                    value = value.lower()
+                value = value.strip()
                 data[key] = value
             phones.append(data)
     return phones
@@ -90,7 +98,7 @@ def auth(ip, pw):
     session = requests.Session()
     # Check if password works
     authstring = bytes(f"Polycom:{pw}", encoding="utf-8")
-    session.cookies.set("Authorization", f"Basic {base64.b64encode(authstring).decode('ascii')}", domain='192.168.1.183')
+    session.cookies.set("Authorization", f"Basic {base64.b64encode(authstring).decode('ascii')}", domain=ip)
     resp = session.post(endpoint, auth=('Polycom', pw), verify=False)
     if "SUCCESS" in resp.text:
         # return the session to simplify usage later.
@@ -119,7 +127,7 @@ def setProvisioning(session, phone):
         if phone[key]:
             #Only pull values we do have
             data[index] = phone[key]
-    resp = session.post('https://192.168.1.183/form-submit',cookies=session.cookies, verify=False, data=data)
+    resp = session.post(f'https://{phone["ip"]}/form-submit', cookies=session.cookies, verify=False, data=data)
     if "CONF_CHANGE" in resp.text:
         return True
     else:
