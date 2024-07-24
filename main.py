@@ -33,6 +33,7 @@ def main():
 
     phoneIPs = scanNetwork(iparr)
     phones = parseCsv(args.csvfile)
+    # consider returning a phone object instead of a dict
     phonetuple = parseResults(phoneIPs, phones)
     phoneArr = phonetuple[0]
     failures = phonetuple[1]
