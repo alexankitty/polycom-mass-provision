@@ -2,5 +2,7 @@ scapy
 netifaces
 netaddr
 requests
-base64
+cryptography
 bs4
+pyOpenSSL
+lxml
