@@ -9,25 +9,46 @@ import base64
 ### CSV Headers
 ### mac,pw,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
 
-parser = argparse.ArgumentParser(
-                    prog='polycom-mass-provision',
-                    description='Provisions many polycom phones on a network',
-                    epilog='Alexankitty 2024')
-parser.add_argument('csvfile', help="CSV File of all MACs and Passwords for the phones to provision")
-parser.add_argument('-ip', '--ip-address', help="IP Address in CIDR notation to scan for phones")
+def main(): 
+    ## Allow for easy importing for people who wish to use it in their projects by not having main run
+    parser = argparse.ArgumentParser(
+                        prog='polycom-mass-provision',
+                        description='Provisions many polycom phones on a network',
+                        epilog='Alexankitty 2024')
+    parser.add_argument('csvfile', help="CSV File of all MACs and Passwords for the phones to provision")
+    parser.add_argument('-ip', '--ip-address', dest='ipaddress', help="IP Address in CIDR notation to scan for phones")
 
-args = parser.parse_args()
-iparr = []
+    args = parser.parse_args()
+    iparr = []
 
-if not args.ipaddress:
-    #Grab all interface IPs if the IP CIDR is not supplied
+    if not args.ipaddress:
+        #Grab all interface IPs if the IP CIDR is not supplied
+        iparr = getIfIPs()
+    else:
+        iparr.append(args.ipaddress)
+
+    phoneIPs = scanNetwork(iparr)
+    phones = parseCsv(args.csvfile)
+    phoneArr = parseResults(phoneIPs, phones)
+    failures = []
+    for phone in phoneArr:
+        session = auth(phone['ip'], phone['pw'])
+        if not session:
+            failures.append(f'{phone["ip"]} {phone["mac"]}: Authentication failed')
+            continue
+        if not setProvisioning(session, phone):
+            failures.append(f'{phone["ip"]} {phone["mac"]}: Configuration failed')
+    for failure in failures:
+        print(failure)
+
+def getIfIPs():
     interfaces = ni.interfaces()
+    arr = []
     for interface in interfaces:
         ip = ni.ifaddresses(interface)[ni.AF_INET][0]
         if ip.addr:
-            iparr.append(f'{ip.addr}/{IPAddress(ip.netmask).netmask_bits()}')
-else:
-    iparr.append(args.ipaddress)
+            arr.append(f'{ip.addr}/{IPAddress(ip.netmask).netmask_bits()}')
+    return arr
 
 def scanNetwork(ips):
     phoneIPs = []
@@ -56,11 +77,13 @@ def parseResults(scanIPs, phones):
     phoneArr = []
     for scanIP in scanIPs:
         for index in range(len(phones)):
-            if scanIP.mac == phones[index].mac:
-                phoneArr.append({'ip': scanIP.ip, 'pw': phones[index].pw})
+            if scanIP.mac == phones[index]['mac']:
+                phones[index]['ip'] = scanIP.ip
+                phoneArr.append(phones[index])
                 #remove the index and decrement as we don't want it to be an option anymore.
                 phones.pop(index)
                 index-=1
+    return phoneArr
 
 def auth(ip, pw):
     endpoint = f'https://{ip}/form-submit/auth.htm'
@@ -98,6 +121,9 @@ def setProvisioning(session, phone):
             data[index] = phone[key]
     resp = session.post('https://192.168.1.183/form-submit',cookies=session.cookies, verify=False, data=data)
     if "CONF_CHANGE" in resp.text:
-        print(f'{phone["ip"]} succeeded!')
+        return True
     else:
-        print(f'{phone["ip"]} failed!')
+        return False
+
+if __name__=="__main__": 
+    main() 
