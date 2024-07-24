@@ -2,6 +2,7 @@
 Provisions a network of phone from a CSV faster than a human can.
 
 # Usage
+It is recommended to run `./cleararpcache.sh` prior to running the script to prevent any arp cache issues during the network discovery process.
 Takes a path to a csv file, and optionally an IP Address in CIDR notation (192.168.1.0/24)
 
 ```
