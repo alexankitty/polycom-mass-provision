@@ -1,11 +1,14 @@
 from scapy.all import ARP, Ether, srp
 from netaddr import IPAddress
+from bs4 import BeautifulSoup  
 import netifaces as ni
 import argparse
 import csv
 import requests
 import urllib3
 import base64
+import json
+import os
 
 urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
@@ -36,7 +39,11 @@ def main():
     phoneArr = phonetuple[0]
     failures = phonetuple[1]
     for phone in phoneArr:
-        session = auth(phone['ip'], phone['pw'])
+        try:
+            session = auth(phone['ip'], phone['pw'])
+        except requests.exceptions.ConnectionError as e:
+            failures.append(f'{phone["ip"]} {phone["mac"]}: {e.args[0].reason}')
+            continue
         if not session:
             failures.append(f'{phone["ip"]} {phone["mac"]}: Authentication failed')
             continue
@@ -69,14 +76,12 @@ def scanNetwork(ips):
         ether = Ether(dst='ff:ff:ff:ff:ff:ff')
         packet = ether/arp
 
-        result = srp(packet, timeout=3, verbose=0)[0]
+        result = srp(packet, timeout=5, verbose=0)[0]
         for sent, received in result:
             # normalize the MAC
             mac = received.hwsrc.replace(":", "")
             mac = mac.lower()
             phoneIPs.append({'ip': received.psrc, 'mac': mac})
-    for phone in phoneIPs:
-        print(phone['ip'], phone['mac'])
     return phoneIPs        
 
 def parseCsv(filename):
@@ -111,33 +116,54 @@ def parseResults(scanIPs, phones):
 
 def auth(ip, pw):
     endpoint = f'https://{ip}/form-submit/auth.htm'
+    endpointalt = f'https://{ip}/auth.htm'
     session = requests.Session()
-    # Check if password works
+    # Older devices require cookie forging
     authstring = bytes(f"Polycom:{pw}", encoding="utf-8")
-    session.cookies.set("Authorization", f"Basic {base64.b64encode(authstring).decode('ascii')}", domain=ip)
+    # Check if password works
+    #session.auth = ('Polycom', pw)
     resp = session.post(endpoint, auth=('Polycom', pw), verify=False)
+    if not "SUCCESS" in resp.text:
+        #some firmwares require get for god knows why
+        resp = session.get(endpointalt, auth=('Polycom', pw), verify=False)
+        if resp.status_code == 200:
+            session.cookies = resp.cookies
+            session.cookies.set("Authorization", f"Basic {base64.b64encode(authstring).decode('ascii')}", domain=ip)
+            return session
     if "SUCCESS" in resp.text:
         # return the session to simplify usage later.
+        session.cookies = resp.cookies
+        session.cookies.set("Authorization", f"Basic {base64.b64encode(authstring).decode('ascii')}", domain=ip)
         return session
     return False
 
-def setProvisioning(session, phone):
-    #423: Server Type | 0: FTP 1:TFTP 2:HTTP 3:HTTPS 4:FTPS
-    #421: Provisioning Server URL
-    #429: Provisioning Server User
-    #415: Provisioning Server Password
-    #417: File Transmit tries Default: 3
-    #419: Retry Wait(s) Default: 1
-    #425: Tag SN to UA Default: 0
+def parseNames(session, ip):
+    #gotta scrape the web to find out the input name of each paramName 
     keys = {
-        '423': 'servertype',
-        '421': 'serverurl',
-        '429': 'serveruser',
-        '415': 'serverpass',
-        '417': 'tries',
-        '419': 'retrywait',
-        '425': 'tagsnua'
-    }
+            'servertype': 'device.prov.serverType',
+            'serverurl': 'device.prov.serverName',
+            'serveruser': 'device.prov.user',
+            'serverpass': 'device.prov.password',
+            'tries': 'device.prov.redunAttemptLimit',
+            'retrywait': 'device.prov.redunInterAttemptDelay',
+            'tagsnua':'device.prov.tagSerialNo'
+            }
+    configKeys = {}
+    endpoint = f'https://{ip}/provConf.htm'
+    resp = session.get(endpoint, cookies=session.cookies, verify=False)
+    soup = BeautifulSoup(resp.text, 'xml')
+    for index, key in keys.items():
+        tag = soup.find('input', {"paramName": key})
+        if not tag:
+            tag = soup.find('select', {"paramName": key})
+        configKeys[tag.attrs['name']] = index
+    return configKeys
+
+def setProvisioning(session, phone):
+    keys = parseNames(session, phone['ip'])
+    print(keys)
+    if not keys:
+        return False
     data = {}
     for index, key in keys.items():
         if phone[key]:

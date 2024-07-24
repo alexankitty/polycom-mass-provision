@@ -2,8 +2,9 @@
 Provisions a network of phone from a CSV faster than a human can.
 
 # Usage
-It is recommended to run `./cleararpcache.sh` prior to running the script to prevent any arp cache issues during the network discovery process.
-Takes a path to a csv file, and optionally an IP Address in CIDR notation (192.168.1.0/24)
+A `./cleararpcache.sh` script is included should there be any issues locating any phones. 
+Takes a path to a csv file, and optionally an IP Address in CIDR notation (192.168.1.0/24)  
+May require you to run as sudo.
 
 ```
 usage: polycom-mass-provision [-h] [-ip IP_ADDRESS] csvfile

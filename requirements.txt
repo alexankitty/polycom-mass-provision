@@ -3,3 +3,4 @@ netifaces
 netaddr
 requests
 base64
+bs4

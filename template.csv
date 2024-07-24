@@ -1,2 +1,2 @@
-mac,pw,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
-9442a220c1ef,456,0,contoso.com,ftpuser,ftppass
+mac,pw,model,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
+9442a220c1ef,456,vvx410,0,contoso.com,ftpuser,ftppass
