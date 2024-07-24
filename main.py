@@ -75,6 +75,8 @@ def scanNetwork(ips):
             mac = received.hwsrc.replace(":", "")
             mac = mac.lower()
             phoneIPs.append({'ip': received.psrc, 'mac': mac})
+    for phone in phoneIPs:
+        print(phone['ip'], phone['mac'])
     return phoneIPs        
 
 def parseCsv(filename):
@@ -100,11 +102,11 @@ def parseResults(scanIPs, phones):
             if scanIP['mac'] == phones[index]['mac']:
                 phones[index]['ip'] = scanIP['ip']
                 phoneArr.append(phones[index])
-                #remove the index and decrement as we don't want it to be an option anymore.
+                #remove the index as we don't want it to be an option anymore.
                 phones.pop(index)
-                index-=1
+                break
     for phone in phones:
-        failures.append(f'{phone["ip"]} {phone["mac"]}: Phone could not be found.')
+        failures.append(f'{phone["mac"]}: Phone could not be found.')
     return (phoneArr, failures)
 
 def auth(ip, pw):
