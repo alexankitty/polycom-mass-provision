@@ -4,7 +4,10 @@ import netifaces as ni
 import argparse
 import csv
 import requests
+import urllib3
 import base64
+
+urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
 ### CSV Headers
 ### mac,pw,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
@@ -40,17 +43,25 @@ def main():
             failures.append(f'{phone["ip"]} {phone["mac"]}: Configuration failed')
     for failure in failures:
         print(failure)
+    if not failures:
+        print("All phones configured successfully. :)")
 
 def getIfIPs():
+    print("Getting interface IPs.")
     interfaces = ni.interfaces()
     arr = []
     for interface in interfaces:
-        ip = ni.ifaddresses(interface)[ni.AF_INET][0]
-        if ip.addr:
-            arr.append(f'{ip.addr}/{IPAddress(ip.netmask).netmask_bits()}')
+        ip = ni.ifaddresses(interface)
+        if [ni.AF_INET][0] in ip:
+            ip = ip[ni.AF_INET][0]
+        if 'addr' in ip:
+            #don't scan the local loopback interface, it's slow.
+            if ip['addr'] != '127.0.0.1':
+                arr.append(f'{ip["addr"]}/{IPAddress(ip["netmask"]).netmask_bits()}')
     return arr
 
 def scanNetwork(ips):
+    print("Scanning the network.")
     phoneIPs = []
     for ip in ips:
         arp = ARP(pdst=ip)
@@ -66,27 +77,26 @@ def scanNetwork(ips):
     return phoneIPs        
 
 def parseCsv(filename):
+    print("Reading CSV.")
     phones = []
-    with open(filename, newline='') as csvfile:
+    with open(filename, 'r') as csvfile:
         reader = csv.DictReader(csvfile)
         for row in reader:
-            data = {}
-            for key, value in row:
-                if key == 'mac':
-                    # normalize the MAC
-                    value = value.replace(":", "")
-                    value = value.lower()
+            # normalize the MAC
+            row['mac'] = row['mac'].replace(":", "")
+            row['mac'] = row['mac'].lower()
+            for value in row:
                 value = value.strip()
-                data[key] = value
-            phones.append(data)
+            phones.append(row)
     return phones
 
 def parseResults(scanIPs, phones):
+    print("Parsing results.")
     phoneArr = []
     for scanIP in scanIPs:
         for index in range(len(phones)):
-            if scanIP.mac == phones[index]['mac']:
-                phones[index]['ip'] = scanIP.ip
+            if scanIP['mac'] == phones[index]['mac']:
+                phones[index]['ip'] = scanIP['ip']
                 phoneArr.append(phones[index])
                 #remove the index and decrement as we don't want it to be an option anymore.
                 phones.pop(index)
@@ -114,16 +124,16 @@ def setProvisioning(session, phone):
     #419: Retry Wait(s) Default: 1
     #425: Tag SN to UA Default: 0
     keys = {
-        423: 'servertype',
-        421: 'serverurl',
-        429: 'serveruser',
-        415: 'serverpass',
-        417: 'tries',
-        419: 'retrywait',
-        425: 'tagsnua'
+        '423': 'servertype',
+        '421': 'serverurl',
+        '429': 'serveruser',
+        '415': 'serverpass',
+        '417': 'tries',
+        '419': 'retrywait',
+        '425': 'tagsnua'
     }
     data = {}
-    for index, key in keys:
+    for index, key in keys.items():
         if phone[key]:
             #Only pull values we do have
             data[index] = phone[key]
