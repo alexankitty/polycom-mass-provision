@@ -7,8 +7,6 @@ import csv
 import requests
 import urllib3
 import base64
-import json
-import os
 
 urllib3.disable_warnings(category=urllib3.exceptions.InsecureRequestWarning)
 
