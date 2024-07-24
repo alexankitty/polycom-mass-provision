@@ -38,6 +38,7 @@ def main():
     failures = phonetuple[1]
     for phone in phoneArr:
         try:
+            #todo: make parallel
             session = auth(phone['ip'], phone['pw'])
         except requests.exceptions.ConnectionError as e:
             failures.append(f'{phone["ip"]} {phone["mac"]}: {e.args[0].reason}')
@@ -120,6 +121,7 @@ def auth(ip, pw):
     authstring = bytes(f"Polycom:{pw}", encoding="utf-8")
     # Check if password works
     #session.auth = ('Polycom', pw)
+    #todo: scrape the web interface to determine how to log in - determine if no session cookie is returned and forge the authorization cookie
     resp = session.post(endpoint, auth=('Polycom', pw), verify=False)
     if not "SUCCESS" in resp.text:
         #some firmwares require get for god knows why
