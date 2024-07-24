@@ -14,7 +14,6 @@ parser = argparse.ArgumentParser(
                     description='Provisions many polycom phones on a network',
                     epilog='Alexankitty 2024')
 parser.add_argument('csvfile', help="CSV File of all MACs and Passwords for the phones to provision")
-parser.add_argument('provserver', help="The Provisioning server for the phones")
 parser.add_argument('-ip', '--ip-address', help="IP Address in CIDR notation to scan for phones")
 
 args = parser.parse_args()
@@ -99,6 +98,6 @@ def setProvisioning(session, phone):
             data[index] = phone[key]
     resp = session.post('https://192.168.1.183/form-submit',cookies=session.cookies, verify=False, data=data)
     if "CONF_CHANGE" in resp.text:
-        print(f'{phone['ip']} succeeded!')
+        print(f'{phone["ip"]} succeeded!')
     else:
-        print(f'{phone['ip']} failed!')
+        print(f'{phone["ip"]} failed!')
