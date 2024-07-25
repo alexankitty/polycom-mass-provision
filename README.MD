@@ -2,7 +2,7 @@
 Provisions a network of phones from a CSV faster than a human can.
 
 # Windows
-Requires [Python](https://www.python.org/ftp/python/3.12.4/python-3.12.4-amd64.exe) to be able to run the script.
+Requires [Python](https://www.python.org/ftp/python/3.12.4/python-3.12.4-amd64.exe) to be able to run the script.  
 Requires [npcap](https://npcap.com/dist/npcap-1.79.exe) installed for the network scan functionality.  
 Requires [Visual Studio Build Tools](https://aka.ms/vs/17/release/RemoteTools.amd64ret.enu.exe) in order to build python wheels. Make sure to install the C++ Desktop Development Tools.
 
