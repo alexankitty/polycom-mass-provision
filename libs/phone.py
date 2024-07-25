@@ -1,6 +1,5 @@
 import urllib3
-from bs4 import BeautifulSoup  
-import csv
+from bs4 import BeautifulSoup
 import requests
 import base64
 import re
@@ -54,23 +53,27 @@ class Phone():
         self.session = requests.session()
         self.session.adapters.pop("https://", None)
         self.session.mount("https://", CustomSSLContextHTTPAdapter(ctx))
+        self.basicAuth = ('Polycom', self.pw)
         authstring = bytes(f"Polycom:{self.pw}", encoding="utf-8")
         # Check if password works
         resp = self.session.get(endpointJs, verify=False)
         js = resp.text
         authType = re.search(r'type: .*', js, re.MULTILINE).group(0)
         authType = self.charReplace(["'", '"', ","], authType)
+        authType = authType.replace('type: ', '')
         authType = authType.strip().lower()
+        authEndpoint = authType.replace('url: ', '')
         authEndpoint = re.search(r'url: .*.htm', js, re.MULTILINE).group(0)
         authEndpoint = self.charReplace(["'", '"', ","], authEndpoint)
+        authEndpoint = authEndpoint.replace('url: ', '')
         authEndpoint = endpointBase + authEndpoint.strip()
         if authType == 'get':
-            resp = self.session.post(authEndpoint, auth=('Polycom', self.pw), verify=False)
+            resp = self.session.get(authEndpoint, auth=self.basicAuth, verify=False)
         if authType == 'post':
-            resp = self.session.post(authEndpoint, auth=('Polycom', self.pw), verify=False)
-        if "INVALID" in resp.text:
-            return False
-        if resp.status_code == 200:
+            resp = self.session.post(authEndpoint, auth=self.basicAuth, verify=False)
+        if "INVALID" in resp.text or "Failed" in resp.text:
+            return False  
+        elif resp.status_code == 200:
             # return the session to simplify usage later.
             self.session.cookies = resp.cookies
             if not self.session.cookies:
@@ -84,7 +87,7 @@ class Phone():
         
         configKeys = {}
         endpoint = f'https://{self.ip}/provConf.htm'
-        resp = self.session.get(endpoint, cookies=self.session.cookies, verify=False)
+        resp = self.session.get(endpoint, auth=self.basicAuth, cookies=self.session.cookies, verify=False)
         soup = BeautifulSoup(resp.text, 'xml')
         for index, key in self.paramKeys.items():
             tag = soup.find('input', {"paramName": key})
@@ -108,7 +111,7 @@ class Phone():
             if self[key]:
                 #Only pull values we do have
                 data[index] = self[key]
-        resp = self.session.post(f'https://{self.ip}/form-submit', cookies=self.session.cookies, verify=False, data=data)
+        resp = self.session.post(f'https://{self.ip}/form-submit', auth=self.basicAuth, cookies=self.session.cookies, verify=False, data=data)
         if "CONF_CHANGE" in resp.text:
             return True
         else:

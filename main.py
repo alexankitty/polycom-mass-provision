@@ -1,6 +1,7 @@
 import argparse
 from libs.net import *
 from libs.phone import *
+from joblib import Parallel, delayed
 
 ### CSV Headers
 ### mac,pw,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
@@ -13,15 +14,19 @@ def main():
                         epilog='Alexankitty 2024')
     parser.add_argument('csvfile', help="CSV File of all MACs and Passwords for the phones to provision")
     parser.add_argument('-ip', '--ip-address', dest='ipaddress', help="IP Address in CIDR notation to scan for phones")
+    parser.add_argument('-p', '--parallel-jobs', dest='jobs', help='Sets the limit on the number of phones that can be done simultaneously')
 
     args = parser.parse_args()
     iparr = []
+    jobs = 5
 
     if not args.ipaddress:
         #Grab all interface IPs if the IP CIDR is not supplied
         iparr = getIfIPs()
     else:
         iparr.append(args.ipaddress)
+    if args.jobs:
+        jobs = args.jobs
 
     phoneIPs = scanNetwork(iparr)
     phones = parseCsv(args.csvfile)
@@ -30,22 +35,28 @@ def main():
     phoneArr = phonetuple[0]
     failures = phonetuple[1]
     if phoneArr:
-        for phone in phoneArr:
-            try:
-                #todo: make parallel
-                session = phone.auth()
-            except requests.exceptions.ConnectionError as e:
-                failures.append(f'{phone["ip"]} {phone["mac"]}: {e.args[0].reason}')
+        results = Parallel(n_jobs = jobs)(delayed(phoneHandler)(phone) for phone in phoneArr)
+         #for phone in phoneArr:
+            #phoneHandler(phone)
+        for result in results:
+            if result == True:
                 continue
-            if not session:
-                failures.append(f'{phone["ip"]} {phone["mac"]}: Authentication failed')
-                continue
-            if not phone.setProvisioning():
-                failures.append(f'{phone["ip"]} {phone["mac"]}: Configuration failed')
+            failures.append(result)
     for failure in failures:
         print(failure)
     if not failures:
         print("All phones configured successfully. :)")
+
+def phoneHandler(phone):
+    try:
+        session = phone.auth()
+    except requests.exceptions.ConnectionError as e:
+        return f'{phone["ip"]} {phone["mac"]}: {e.args[0].reason}'
+    if not session:
+        return f'{phone["ip"]} {phone["mac"]}: Authentication failed'
+    if not phone.setProvisioning():
+        return f'{phone["ip"]} {phone["mac"]}: Configuration failed'
+    return True
 
 if __name__=="__main__": 
     main() 

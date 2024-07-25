@@ -6,3 +6,4 @@ cryptography
 bs4
 pyOpenSSL
 lxml
+joblib

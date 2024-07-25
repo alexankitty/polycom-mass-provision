@@ -2,6 +2,7 @@ from scapy.all import ARP, Ether, srp
 from netaddr import IPAddress
 import netifaces as ni
 from libs.phone import *
+import csv
 
 def getIfIPs():
     print("Getting interface IPs.")
