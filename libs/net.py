@@ -34,7 +34,7 @@ def scanNetwork(ips):
         ether = Ether(dst='ff:ff:ff:ff:ff:ff')
         packet = ether/arp
 
-        result = srp(packet, timeout=30, verbose=0)[0]
+        result = srp(packet, timeout=5, verbose=0)[0]
         for sent, received in result:
             # normalize the MAC
             mac = received.hwsrc.replace(":", "")
@@ -69,6 +69,15 @@ def parseResults(scanIPs, phones, force = False):
                 #remove the index as we don't want it to be an option anymore.
                 phones.pop(index)
                 break
+    for index in range(len(phones)):
+        x = 0
+        #allow manually specifying the phone ip
+        if phones[index]['ip']:
+            phone = Phone(phones[index], force)
+            phoneArr.append(phone)
     for phone in phones:
+        #bypass if the phone got an ip through manual specification
+        if phone['ip']:
+            continue
         failures.append(f'{phone["mac"]}: Phone could not be found.')
     return (phoneArr, failures)

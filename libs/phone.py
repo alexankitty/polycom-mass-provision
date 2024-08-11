@@ -85,11 +85,14 @@ class Phone():
                 self.session.cookies.set("Authorization", f"Basic {base64.b64encode(authstring).decode('ascii')}", domain=self.ip)
             return True
         return False
+    
     def get_csrf_token(self):
         indexEndpoint = f'https://{self.ip}/index.htm'
         response = self.session.get(indexEndpoint, auth=self.basicAuth, cookies=self.session.cookies, verify=False)
         soup = BeautifulSoup(response.text, 'xml')
         tag = soup.find('meta', {"name": "csrf-token"})
+        if not tag:
+            return False
         return tag.attrs['content']
 
     def parseNames(self):
@@ -101,12 +104,16 @@ class Phone():
             self.session.headers.update({'Referer': f'https://{self.ip}/index.htm', 'Anti-Csrf-Token': self.csrf_token})
         resp = self.session.get(endpoint, auth=self.basicAuth, cookies=self.session.cookies, verify=False)
         soup = BeautifulSoup(resp.text, 'xml')
+        failure = False
         for index, key in self.paramKeys.items():
             tag = soup.find('input', {"paramName": key})
             if not tag:
                 tag = soup.find('select', {"paramName": key})
+            if not tag:
+                failure = True
+                continue
             configKeys[tag.attrs['name']] = index
-        return configKeys
+        return [configKeys, failure]
 
     def charReplace(self, charArray, target):
         for char in charArray:
@@ -115,7 +122,10 @@ class Phone():
         return target
 
     def setProvisioning(self):
-        keys = self.parseNames()
+        result = self.parseNames()
+        if result[1]:
+            return False
+        keys = result[0]
         if not keys:
             return False
         data = {}
