@@ -27,9 +27,11 @@ class CustomSSLContextHTTPAdapter(requests.adapters.HTTPAdapter):
 
 class Phone():
     # Internal class methods
-    def __init__(self, propList):
+    def __init__(self, propList, force):
         for index, prop in propList.items():
             self[index] = prop
+        self['force'] = force
+        self['csrf_token'] = ''
 
     def __setitem__(self, key, value):
         setattr(self, key, value)
@@ -69,8 +71,10 @@ class Phone():
         authEndpoint = endpointBase + authEndpoint.strip()
         if authType == 'get':
             resp = self.session.get(authEndpoint, auth=self.basicAuth, verify=False)
+            self.csrf_token = self.get_csrf_token()
         if authType == 'post':
             resp = self.session.post(authEndpoint, auth=self.basicAuth, verify=False)
+            self.csrf_token = self.get_csrf_token()
         if "INVALID" in resp.text or "Failed" in resp.text:
             return False  
         elif resp.status_code == 200:
@@ -81,12 +85,20 @@ class Phone():
                 self.session.cookies.set("Authorization", f"Basic {base64.b64encode(authstring).decode('ascii')}", domain=self.ip)
             return True
         return False
+    def get_csrf_token(self):
+        indexEndpoint = f'https://{self.ip}/index.htm'
+        response = self.session.get(indexEndpoint, auth=self.basicAuth, cookies=self.session.cookies, verify=False)
+        soup = BeautifulSoup(response.text, 'xml')
+        tag = soup.find('meta', {"name": "csrf-token"})
+        return tag.attrs['content']
 
     def parseNames(self):
         #gotta scrape the web to find out the input name of each paramName 
         
         configKeys = {}
         endpoint = f'https://{self.ip}/provConf.htm'
+        if self.csrf_token:
+            self.session.headers.update({'Referer': f'https://{self.ip}/index.htm', 'Anti-Csrf-Token': self.csrf_token})
         resp = self.session.get(endpoint, auth=self.basicAuth, cookies=self.session.cookies, verify=False)
         soup = BeautifulSoup(resp.text, 'xml')
         for index, key in self.paramKeys.items():
@@ -108,9 +120,11 @@ class Phone():
             return False
         data = {}
         for index, key in keys.items():
-            if self[key]:
+            if self[key] or self['force']:
                 #Only pull values we do have
                 data[index] = self[key]
+        if self.csrf_token:
+            self.session.headers.update({'referrer': f'https://{self.ip}/index.htm', 'Anti-Csrf-Token': self.csrf_token})
         resp = self.session.post(f'https://{self.ip}/form-submit', auth=self.basicAuth, cookies=self.session.cookies, verify=False, data=data)
         if "CONF_CHANGE" in resp.text:
             return True

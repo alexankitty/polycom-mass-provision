@@ -34,7 +34,7 @@ def scanNetwork(ips):
         ether = Ether(dst='ff:ff:ff:ff:ff:ff')
         packet = ether/arp
 
-        result = srp(packet, timeout=5, verbose=0)[0]
+        result = srp(packet, timeout=30, verbose=0)[0]
         for sent, received in result:
             # normalize the MAC
             mac = received.hwsrc.replace(":", "")
@@ -56,7 +56,7 @@ def parseCsv(filename):
             phones.append(row)
     return phones
 
-def parseResults(scanIPs, phones):
+def parseResults(scanIPs, phones, force = False):
     print("Parsing results.")
     phoneArr = []
     failures = []
@@ -64,7 +64,7 @@ def parseResults(scanIPs, phones):
         for index in range(len(phones)):
             if scanIP['mac'] == phones[index]['mac']:
                 phones[index]['ip'] = scanIP['ip']
-                phone = Phone(phones[index])
+                phone = Phone(phones[index], force)
                 phoneArr.append(phone)
                 #remove the index as we don't want it to be an option anymore.
                 phones.pop(index)

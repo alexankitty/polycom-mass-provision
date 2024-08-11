@@ -15,6 +15,7 @@ def main():
     parser.add_argument('csvfile', help="CSV File of all MACs and Passwords for the phones to provision")
     parser.add_argument('-ip', '--ip-address', dest='ipaddress', help="IP Address in CIDR notation to scan for phones")
     parser.add_argument('-p', '--parallel-jobs', dest='jobs', help='Sets the limit on the number of phones that can be done simultaneously')
+    parser.add_argument('-f', '--force', action='store_true', dest='forceUpdate', help='Forces empty fields to be entered. Useful for when the provisioning server does not require a username or password.')
 
     args = parser.parse_args()
     iparr = []
@@ -31,7 +32,7 @@ def main():
     phoneIPs = scanNetwork(iparr)
     phones = parseCsv(args.csvfile)
     # consider returning a phone object instead of a dict
-    phonetuple = parseResults(phoneIPs, phones)
+    phonetuple = parseResults(phoneIPs, phones, args.forceUpdate)
     phoneArr = phonetuple[0]
     failures = phonetuple[1]
     if phoneArr:
