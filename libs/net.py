@@ -70,7 +70,6 @@ def parseResults(scanIPs: list[str], phones: list[Phone], force: bool = False) -
                 phones.pop(index)
                 break
     for index in range(len(phones)):
-        x = 0
         #allow manually specifying the phone ip
         if phones[index]['ip']:
             phone = Phone(phones[index], force)
