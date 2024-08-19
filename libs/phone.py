@@ -49,7 +49,7 @@ class Phone():
                         'tagsnua':'device.prov.tagSerialNo'}
     
     # Methods
-    def auth(self):
+    def auth(self) -> bool:
         endpointBase = f'https://{self.ip}/'
         endpointJs = f'https://{self.ip}/js/login.js'
         self.session = requests.session()
@@ -86,7 +86,7 @@ class Phone():
             return True
         return False
     
-    def get_csrf_token(self):
+    def get_csrf_token(self) -> str:
         indexEndpoint = f'https://{self.ip}/index.htm'
         response = self.session.get(indexEndpoint, auth=self.basicAuth, cookies=self.session.cookies, verify=False)
         soup = BeautifulSoup(response.text, 'xml')
@@ -95,7 +95,7 @@ class Phone():
             return False
         return tag.attrs['content']
 
-    def parseNames(self):
+    def parseNames(self) -> list:
         #gotta scrape the web to find out the input name of each paramName 
         
         configKeys = {}
@@ -115,13 +115,13 @@ class Phone():
             configKeys[tag.attrs['name']] = index
         return [configKeys, failure]
 
-    def charReplace(self, charArray, target):
+    def charReplace(self, charArray: str, target: str) -> str:
         for char in charArray:
             if char in target:
                 target = target.replace(char, '')
         return target
 
-    def setProvisioning(self):
+    def setProvisioning(self) -> bool:
         result = self.parseNames()
         if result[1]:
             return False

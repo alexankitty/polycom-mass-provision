@@ -4,7 +4,7 @@ import netifaces as ni
 from libs.phone import *
 import csv
 
-def getIfIPs():
+def getIfIPs() -> list[str]:
     print("Getting interface IPs.")
     interfaces = ni.interfaces()
     gateways = ni.gateways()[2]
@@ -26,7 +26,7 @@ def getIfIPs():
     arr = list(dict.fromkeys(arr))
     return arr
 
-def scanNetwork(ips):
+def scanNetwork(ips: list[str]) -> list[dict]:
     print("Scanning the network.")
     phoneIPs = []
     for ip in ips:
@@ -42,7 +42,7 @@ def scanNetwork(ips):
             phoneIPs.append({'ip': received.psrc, 'mac': mac})
     return phoneIPs        
 
-def parseCsv(filename):
+def parseCsv(filename: str) -> list[dict]:
     print("Reading CSV.")
     phones = []
     with open(filename, 'r') as csvfile:
@@ -56,7 +56,7 @@ def parseCsv(filename):
             phones.append(row)
     return phones
 
-def parseResults(scanIPs, phones, force = False):
+def parseResults(scanIPs: list[str], phones: list[dict], force: bool = False) -> list[Phone]:
     print("Parsing results.")
     phoneArr = []
     failures = []

@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 ### CSV Headers
 ### mac,pw,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
 
-def main(): 
+def main() -> None: 
     ## Allow for easy importing for people who wish to use it in their projects by not having main run
     parser = argparse.ArgumentParser(
                         prog='polycom-mass-provision',
@@ -48,7 +48,7 @@ def main():
     if not failures:
         print("All phones configured successfully. :)")
 
-def phoneHandler(phone):
+def phoneHandler(phone: Phone) -> str:
     try:
         session = phone.auth()
     except requests.exceptions.ConnectionError as e:
