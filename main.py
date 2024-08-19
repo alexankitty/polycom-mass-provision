@@ -1,10 +1,11 @@
 import argparse
-from libs.net import *
+from libs.parse import *
 from libs.phone import *
+from libs.netscan import *
 from joblib import Parallel, delayed
 
 ### CSV Headers
-### mac,pw,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
+### mac,pw,ip,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
 
 def main() -> None: 
     ## Allow for easy importing for people who wish to use it in their projects by not having main run
@@ -18,18 +19,9 @@ def main() -> None:
     parser.add_argument('-f', '--force', action='store_true', dest='forceUpdate', help='Forces empty fields to be entered. Useful for when the provisioning server does not require a username or password.')
 
     args = parser.parse_args()
-    iparr = []
-    jobs = 5
-
-    if not args.ipaddress:
-        #Grab all interface IPs if the IP CIDR is not supplied
-        iparr = getIfIPs()
-    else:
-        iparr.append(args.ipaddress)
-    if args.jobs:
-        jobs = args.jobs
-
-    phoneIPs = scanNetwork(iparr)
+    jobs = 5 if not args.jobs else args.jobs
+    network_scan = NetworkScanner() if not args.ipaddress else NetworkScanner(args.ipaddress)
+    phoneIPs = network_scan.get_hosts()
     phones = parseCsv(args.csvfile)
     # consider returning a phone object instead of a dict
     phonetuple = parseResults(phoneIPs, phones, args.forceUpdate)
