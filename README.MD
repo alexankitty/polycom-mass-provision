@@ -38,3 +38,6 @@ options:
 
 Alexankitty 2024
 ```
+
+# Known Issues
+The network scanner is F tier. It'll be fixed, someday.
