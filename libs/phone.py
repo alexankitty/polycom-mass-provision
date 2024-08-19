@@ -23,7 +23,7 @@ class CustomSSLContextHTTPAdapter(requests.adapters.HTTPAdapter):
             block=block, ssl_context=self.ssl_context)
         
 ### CSV Headers
-### mac,pw,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
+### mac,pw,ip,servertype,serverurl,serveruser,serverpass,tries,retrywait,tagsnua
 
 class Phone():
     # Internal class methods
