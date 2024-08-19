@@ -12,7 +12,7 @@ Requires [Visual Studio Build Tools](https://aka.ms/vs/17/release/RemoteTools.am
 3. Once this is completed, proceed to usage.
 
 # Usage
-1. Put together a csv file with all of the phones you want to provisiong using the `template.csv` file included.
+1. Put together a csv file with all of the phones you want to provisiong using the `template.csv` file included. Should the script fail to find your phones for some reason, you can manually specify the IPs in the CSV to override them.
 2. Run the script with `run.bat` or `run.sh` from your system's terminal emulator/command prompt. Include your csv file, and any additional arguments (Ex: `run.bat phones.csv -ip 192.168.1.1/24 -p 10`)
 3. Wait for the script to finish. The results will be included once the script has ran to show you what phones failed to provision and why.
 4. Report any issues you run into with the script to this repo.
@@ -21,7 +21,7 @@ Takes a path to a csv file, and optionally the IP Address of your router/gateway
 May require you to run as root/admin depending on your system setup.
 
 ```
-usage: polycom-mass-provision [-h] [-ip IPADDRESS] [-p JOBS] csvfile
+usage: polycom-mass-provision [-h] [-ip IPADDRESS] [-p JOBS] [-f] csvfile
 
 Provisions many polycom phones on a network
 
@@ -34,6 +34,7 @@ options:
                         IP Address in CIDR notation to scan for phones
   -p JOBS, --parallel-jobs JOBS
                         Sets the limit on the number of phones that can be done simultaneously
+  -f, --force           Forces empty fields to be entered. Useful for when the provisioning server does not require a username or password.
 
 Alexankitty 2024
 ```
