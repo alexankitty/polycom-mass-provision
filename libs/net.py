@@ -26,7 +26,7 @@ def getIfIPs() -> list[str]:
     arr = list(dict.fromkeys(arr))
     return arr
 
-def scanNetwork(ips: list[str]) -> list[dict]:
+def scanNetwork(ips: list[str]) -> list[dict[str, str]]:
     print("Scanning the network.")
     phoneIPs = []
     for ip in ips:
@@ -56,7 +56,7 @@ def parseCsv(filename: str) -> list[dict]:
             phones.append(row)
     return phones
 
-def parseResults(scanIPs: list[str], phones: list[dict], force: bool = False) -> list[Phone]:
+def parseResults(scanIPs: list[str], phones: list[Phone], force: bool = False) -> tuple[list[Phone], list[str]]:
     print("Parsing results.")
     phoneArr = []
     failures = []
